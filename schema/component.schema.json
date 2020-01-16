@@ -6,7 +6,8 @@
     "properties": {
         "apiVersion": {
             "type": "string",
-            "description": "The specific version of the Open Application Model specification in use. This version of the specification covers apiVersions in core.oam.dev/v1alpha1."
+            "description": "The specific version of the Open Application Model specification in use. This version of the specification covers apiVersions in core.oam.dev/v1alpha1.",
+            "enum": [ "core.oam.dev/v1alpha1" ]
         },
         "kind": {
             "type": "string",
@@ -33,53 +34,52 @@
             }
         },
         "spec": {
-            "type": "object",
-            "description": "A container for all remaining attributes.",
-            "additionalProperties": {
-                "$ref": "#/definitions/componentSpec"
-            }
+            "$ref": "#/definitions/componentSpec"
         }
     },
     "required": ["apiVersion", "kind", "metadata", "spec"],
     "additionalProperties": false,
     "definitions": {
         "componentSpec": {
-            "parameters":{
-                "type": "array",
-                "description": "The component's configuration options.",
-                "items": {
-                    "$ref": "#/definitions/componentParameter"
-                }
-            },
-            "workloadType":{
-                "type": "string",
-                "description": "A succinct, semantically meaningful descriptor of the component's runtime profile.",
-                "enum": ["Server", "SingletonServer", "Worker", "SingletonWorker", "Task", "SingletonTask"]
-            },
-            "osType":{
-                "type": "string",
-                "default": "linux",
-                "description": "The OS required to host (all of) the component's containers (since containers share a kernel with the underlying host).",
-                "enum": ["linux", "windows"]
-            },
-            "arch": {
-                "type": "string",
-                "default": "amd64",
-                "description": "The CPU architecture required to host (all of) the component's containers (since containers share physical hardware with the underlying host).",
-                "enum": ["i386", "amd64", "arm", "arm64"]
-            },
-            "containers":{
-                "type": "array",
-                "description": "The OCI container(s) that implement the component.",
-                "items": {
-                    "$ref": "#/definitions/container"
-                }
-            },
-            "workloadSettings": {
-                "type": "array",
-                "description": "Declaration of non-container settings that should be passed to the workload runtime.",
-                "items": {
-                    "$ref": "#/definitions/workloadSetting"
+            "type": "object",
+            "description": "A container for all remaining attributes of a component",
+            "properties": {
+                "parameters":{
+                    "type": "array",
+                    "description": "The component's configuration options.",
+                    "items": {
+                        "$ref": "#/definitions/componentParameter"
+                    }
+                },
+                "workloadType":{
+                    "type": "string",
+                    "description": "A succinct, semantically meaningful descriptor of the component's runtime profile."
+                },
+                "osType":{
+                    "type": "string",
+                    "default": "linux",
+                    "description": "The OS required to host (all of) the component's containers (since containers share a kernel with the underlying host).",
+                    "enum": ["linux", "windows"]
+                },
+                "arch": {
+                    "type": "string",
+                    "default": "amd64",
+                    "description": "The CPU architecture required to host (all of) the component's containers (since containers share physical hardware with the underlying host).",
+                    "enum": ["i386", "amd64", "arm", "arm64"]
+                },
+                "containers":{
+                    "type": "array",
+                    "description": "The OCI container(s) that implement the component.",
+                    "items": {
+                        "$ref": "#/definitions/container"
+                    }
+                },
+                "workloadSettings": {
+                    "type": "array",
+                    "description": "Declaration of non-container settings that should be passed to the workload runtime.",
+                    "items": {
+                        "$ref": "#/definitions/workloadSetting"
+                    }
                 }
             },
             "required": ["workloadType"],
@@ -139,7 +139,7 @@
             },
             "required": ["name"],
             "additionalProperties": false
-        },        
+        },
         "container": {
             "type": "object",
             "description": "The runtime configuration necessary to run a containerized workload for this component.",
@@ -233,13 +233,15 @@
                     }
                 },
                 "cmd": {
-                    "type": "string",
+                    "type": "array",
+                    "description": "Entrypoint array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "args": {
-                    "type": "string",
+                    "type": "array",
+                    "description": "Arguments to the entrypoint. The container image's CMD is used if this is not provided.",
                     "items": {
                         "type": "string"
                     }
@@ -278,7 +280,7 @@
                         "type": "object",
                         "description": "a path and the value to be written into a file at that location",
                         "properties": {
-                            "name": {
+                            "path": {
                                 "description": "The file name as an absolute path. Must be unique per container.",
                                 "type": "string",
                                 "$comment": "format of this value is operating system dependent.",
@@ -294,7 +296,7 @@
                             }
                         },
                         "required": [
-                            "name"
+                            "path"
                         ],
                         "additionalProperties": false
                     }
@@ -327,16 +329,20 @@
                 "livenessProbe": {
                     "description": "Instructions for assessing whether the container is alive.",
                     "type": "object",
-                    "additionalProperties": {
+                    "allOf": [{
                         "$ref": "#/definitions/healthProbe"
-                    }
+                    }]
                 },
                 "readinessProbe": {
                     "description": "Instructions for assessing whether the container is in a suitable state to serve traffic.",
                     "type": "object",
-                    "additionalProperties": {
+                    "allOf": [{
                         "$ref": "#/definitions/healthProbe"
-                    }
+                    }]
+                },
+                "imagePullSecret": {
+                    "type": "string",
+                    "description": "Key that can be used to retrieve the credentials for pulling this secret."
                 }
             },
             "required": ["name", "image", "resources"],
